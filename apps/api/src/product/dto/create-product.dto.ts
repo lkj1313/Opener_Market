@@ -19,6 +19,10 @@ export class CreateProductDto {
   stock: number;
 
   @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
 }

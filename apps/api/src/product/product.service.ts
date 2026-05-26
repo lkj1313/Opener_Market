@@ -29,6 +29,7 @@ export class ProductService {
     return this.prisma.product.create({
       data: {
         sellerId: seller.id,
+        categoryId: dto.categoryId ?? null,
         name: dto.name,
         description: dto.description,
         price: dto.price,
@@ -39,11 +40,12 @@ export class ProductService {
   }
 
   // 2. 전체 상품 목록 (BUYER용, ACTIVE만)
-  async findAll(query: { page?: number; limit?: number }) {
+  async findAll(query: { page?: number; limit?: number; categoryId?: string }) {
     const { page, limit } = normalizePagination(query.page, query.limit);
     const skip = calculateSkip(page, limit);
 
-    const where = { status: ProductStatus.ACTIVE };
+    const where: any = { status: ProductStatus.ACTIVE };
+    if (query.categoryId) where.categoryId = query.categoryId;
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -125,6 +127,7 @@ export class ProductService {
       where: { id },
       include: {
         seller: { select: { id: true, shopName: true } },
+        category: { select: { id: true, name: true, slug: true } },
         discounts: true,
       },
     });

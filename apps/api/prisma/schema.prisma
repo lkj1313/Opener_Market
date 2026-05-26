@@ -82,9 +82,22 @@ model Seller {
   shopDiscounts ShopDiscount[]
 }
 
+model Category {
+  id        String @id @default(cuid())
+  name      String
+  slug      String @unique
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+}
+
 model Product {
   id          String        @id @default(cuid())
   sellerId    String
+  categoryId  String?
   name        String
   description String
   price       Int
@@ -93,9 +106,10 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  seller    Seller     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
-  discounts Discount[]
-  cartItems CartItem[]
+  seller     Seller     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  category   Category?  @relation(fields: [categoryId], references: [id])
+  discounts  Discount[]
+  cartItems  CartItem[]
 }
 
 model Discount {
