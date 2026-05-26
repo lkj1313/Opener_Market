@@ -7,9 +7,10 @@ import { SellerApplicationModule } from './seller-application/seller-application
 import { UserModule } from './user/user.module';
 import { ProductModule } from './product/product.module';
 import { ShopDiscountModule } from './shop-discount/shop-discount.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SellerApplicationModule, UserModule, ProductModule, ShopDiscountModule],
+  imports: [PrismaModule, AuthModule, SellerApplicationModule, UserModule, ProductModule, ShopDiscountModule, CartModule],
   controllers: [AppController],
   providers: [AppService],
 })
