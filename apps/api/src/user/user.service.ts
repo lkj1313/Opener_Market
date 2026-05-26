@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { calculateSkip, createPaginatedResult } from '@opener/shared';
+import { calculateSkip, createPaginatedResult, normalizePagination } from '@opener/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseException } from '../common/exceptions/base.exception';
 import { USER_ERROR_CODES } from './error-codes/user.error-code';
@@ -39,8 +39,7 @@ export class UserService {
 
   // 3. 전체 사용자 목록 (Admin용)
   async findAll(query: { role?: Role; status?: UserStatus; page?: number; limit?: number }) {
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.max(1, Math.min(100, query.limit ?? 20));
+    const { page, limit } = normalizePagination(query.page, query.limit);
     const skip = calculateSkip(page, limit);
 
     const where: any = {};

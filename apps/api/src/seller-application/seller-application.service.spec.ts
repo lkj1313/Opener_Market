@@ -22,6 +22,9 @@ describe('SellerApplicationService', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
+    seller: {
+      create: jest.fn(),
+    },
     // Prisma 트랜잭션을 흉낸다. 배열로 들어온 연산들을 순서대로 실행하고 결과를 배열로 반환
     $transaction: jest.fn(async (operations: any[]) => Promise.all(operations)),
   };
@@ -71,19 +74,6 @@ describe('SellerApplicationService', () => {
 
       await expect(service.create(dto, userId)).rejects.toThrow(
         new BaseException(SELLER_APPLICATION_ERROR_CODES.APPLICATION_EXISTS),
-      );
-    });
-
-    it('상점명 중복이면 SHOP_NAME_EXISTS 에러', async () => {
-      prisma.user.findUnique.mockResolvedValue({
-        id: userId,
-        role: Role.BUYER,
-      });
-      prisma.sellerApplication.findUnique.mockResolvedValue(null);
-      prisma.sellerApplication.findFirst.mockResolvedValue({ id: 'app-other' });
-
-      await expect(service.create(dto, userId)).rejects.toThrow(
-        new BaseException(SELLER_APPLICATION_ERROR_CODES.SHOP_NAME_EXISTS),
       );
     });
 
@@ -192,11 +182,14 @@ describe('SellerApplicationService', () => {
       );
     });
 
-    it('정상 승인 시 트랜잭션으로 신청 상태와 유저 역할을 함께 변경', async () => {
+    it('정상 승인 시 트랜잭션으로 신청 상태, 유저 역할, Seller 레코드를 함께 변경', async () => {
       prisma.sellerApplication.findUnique.mockResolvedValue({
         id: appId,
         userId: 'user-123',
         status: SellerApplicationStatus.PENDING,
+        shopName: '맛있는 과자',
+        businessAddress: '서울특별시 강남구 테헤란로 123',
+        returnAddress: '서울특별시 서초구 반포대로 456',
       });
       prisma.sellerApplication.update.mockResolvedValue({
         id: appId,
@@ -205,6 +198,11 @@ describe('SellerApplicationService', () => {
       prisma.user.update.mockResolvedValue({
         id: 'user-123',
         role: Role.SELLER,
+      });
+      prisma.seller.create.mockResolvedValue({
+        id: 'seller-1',
+        userId: 'user-123',
+        shopName: '맛있는 과자',
       });
 
       const result = await service.approve(appId);
@@ -216,6 +214,14 @@ describe('SellerApplicationService', () => {
       expect(prisma.$transaction).toHaveBeenCalled();
       expect(prisma.sellerApplication.update).toHaveBeenCalled();
       expect(prisma.user.update).toHaveBeenCalled();
+      expect(prisma.seller.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-123',
+          shopName: '맛있는 과자',
+          businessAddress: '서울특별시 강남구 테헤란로 123',
+          returnAddress: '서울특별시 서초구 반포대로 456',
+        },
+      });
     });
   });
 

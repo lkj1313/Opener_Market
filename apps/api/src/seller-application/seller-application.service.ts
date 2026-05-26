@@ -29,15 +29,7 @@ export class SellerApplicationService {
       throw new BaseException(SELLER_APPLICATION_ERROR_CODES.APPLICATION_EXISTS);
     }
 
-    // 1-3. 상점명 중복 확인 (선택적)
-    const shopNameExists = await this.prisma.sellerApplication.findFirst({
-      where: { shopName: dto.shopName },
-    });
-    if (shopNameExists) {
-      throw new BaseException(SELLER_APPLICATION_ERROR_CODES.SHOP_NAME_EXISTS);
-    }
-
-    // 1-4. 신청 생성
+    // 1-3. 신청 생성
     const application = await this.prisma.sellerApplication.create({
       data: {
         userId,
@@ -100,7 +92,7 @@ export class SellerApplicationService {
       );
     }
 
-    // 트랜잭션: 신청 승인 + 유저 역할 변경
+    // 트랜잭션: 신청 승인 + 유저 역할 변경 + Seller 레코드 생성
     const [updatedApplication] = await this.prisma.$transaction([
       this.prisma.sellerApplication.update({
         where: { id },
@@ -112,6 +104,14 @@ export class SellerApplicationService {
       this.prisma.user.update({
         where: { id: application.userId },
         data: { role: Role.SELLER },
+      }),
+      this.prisma.seller.create({
+        data: {
+          userId: application.userId,
+          shopName: application.shopName,
+          businessAddress: application.businessAddress,
+          returnAddress: application.returnAddress,
+        },
       }),
     ]);
 
