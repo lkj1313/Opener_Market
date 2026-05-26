@@ -6,9 +6,10 @@ import {
   IsBoolean,
   Min,
 } from 'class-validator';
+import type { CreateShopDiscountRequest } from '@opener/shared';
 import { DiscountType } from '../../generated/prisma/enums';
 
-export class CreateShopDiscountDto {
+export class CreateShopDiscountDto implements CreateShopDiscountRequest {
   @IsEnum(DiscountType)
   type: DiscountType;
 

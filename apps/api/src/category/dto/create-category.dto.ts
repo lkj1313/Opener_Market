@@ -1,6 +1,7 @@
 import { IsString, IsOptional, MinLength } from 'class-validator';
+import type { CreateCategoryRequest } from '@opener/shared';
 
-export class CreateCategoryDto {
+export class CreateCategoryDto implements CreateCategoryRequest {
   @IsString()
   @MinLength(1)
   name: string;

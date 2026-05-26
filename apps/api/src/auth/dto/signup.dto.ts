@@ -1,7 +1,8 @@
 import { IsEmail, IsString, MinLength, MaxLength, IsEnum, IsOptional } from 'class-validator';
+import type { SignupRequest } from '@opener/shared';
 import { Role } from '../../generated/prisma/enums';
 
-export class SignupDto {
+export class SignupDto implements SignupRequest {
   @IsEmail()
   email: string;
 

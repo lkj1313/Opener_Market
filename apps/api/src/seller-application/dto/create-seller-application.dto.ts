@@ -1,6 +1,7 @@
 import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
+import type { CreateSellerApplicationRequest } from '@opener/shared';
 
-export class CreateSellerApplicationDto {
+export class CreateSellerApplicationDto implements CreateSellerApplicationRequest {
   @IsString()
   @MinLength(2)
   @MaxLength(50)
