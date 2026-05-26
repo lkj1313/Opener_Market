@@ -1,7 +1,8 @@
 import { IsString, IsInt, Min, MaxLength, IsOptional, IsEnum } from 'class-validator';
+import type { CreateProductRequest } from '@opener/shared';
 import { ProductStatus } from '../../generated/prisma/enums';
 
-export class CreateProductDto {
+export class CreateProductDto implements CreateProductRequest {
   @IsString()
   @MaxLength(100)
   name: string;
