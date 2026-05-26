@@ -26,14 +26,15 @@ enum SellerApplicationStatus {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  nickname     String
-  passwordHash String
-  role         Role       @default(BUYER)
-  status       UserStatus @default(ACTIVE)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id            String     @id @default(cuid())
+  email         String     @unique
+  nickname      String
+  passwordHash  String
+  role          Role       @default(BUYER)
+  status        UserStatus @default(ACTIVE)
+  isSuperAdmin  Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   sellerApplication SellerApplication?
 }
