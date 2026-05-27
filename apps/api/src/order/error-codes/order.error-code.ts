@@ -32,4 +32,14 @@ export const ORDER_ERROR_CODES: Record<string, ErrorCode> = {
     code: 'ORDER-006',
     message: '취소할 수 없는 주문 상태입니다.',
   },
+  ALREADY_PAID: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'ORDER-007',
+    message: '이미 결제된 주문입니다.',
+  },
+  INSUFFICIENT_BALANCE: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'ORDER-008',
+    message: '잔액이 부족합니다.',
+  },
 };

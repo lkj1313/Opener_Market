@@ -10,9 +10,10 @@ import { ShopDiscountModule } from './shop-discount/shop-discount.module';
 import { CartModule } from './cart/cart.module';
 import { CategoryModule } from './category/category.module';
 import { OrderModule } from './order/order.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SellerApplicationModule, UserModule, ProductModule, ShopDiscountModule, CartModule, CategoryModule, OrderModule],
+  imports: [PrismaModule, AuthModule, SellerApplicationModule, UserModule, ProductModule, ShopDiscountModule, CartModule, CategoryModule, OrderModule, WalletModule],
   controllers: [AppController],
   providers: [AppService],
 })

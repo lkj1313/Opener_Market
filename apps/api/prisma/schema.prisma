@@ -54,6 +54,7 @@ model User {
   role          Role       @default(BUYER)
   status        UserStatus @default(ACTIVE)
   isSuperAdmin  Boolean    @default(false)
+  balance       Int        @default(0)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -61,6 +62,7 @@ model User {
   sellerApplication   SellerApplication?
   cart                Cart?
   orders              Order[]
+  walletTransactions  WalletTransaction[]
 }
 
 model SellerApplication {
@@ -212,4 +214,16 @@ model OrderItem {
 
   subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id])
+}
+
+model WalletTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // CHARGE, USE, REFUND
+  amount       Int
+  balanceAfter Int
+  orderId      String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

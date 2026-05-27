@@ -306,4 +306,84 @@ export class OrderService {
       data: updateData,
     });
   }
+
+  // 7. 주문 결제 (잔액 차감)
+  async pay(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      throw new BaseException(ORDER_ERROR_CODES.ORDER_NOT_FOUND);
+    }
+
+    if (order.userId !== userId) {
+      throw new BaseException(ORDER_ERROR_CODES.ORDER_FORBIDDEN);
+    }
+
+    // 이미 결제되었거나 취소된 주문인지 확인
+    for (const subOrder of order.items) {
+      if (subOrder.status === OrderStatus.PAID) {
+        throw new BaseException(ORDER_ERROR_CODES.ALREADY_PAID);
+      }
+      if (subOrder.status === OrderStatus.CANCELLED) {
+        throw new BaseException(ORDER_ERROR_CODES.CANNOT_CANCEL);
+      }
+    }
+
+    // 총 결제 금액 계산
+    const finalAmount = order.items.reduce(
+      (sum, sub) => sum + sub.totalAmount + sub.shippingFee,
+      0,
+    );
+
+    // 잔액 확인
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { balance: true },
+    });
+
+    if (!user || user.balance < finalAmount) {
+      throw new BaseException(ORDER_ERROR_CODES.INSUFFICIENT_BALANCE);
+    }
+
+    // 트랜잭션: 잔액 차감 + 상태 변경 + 거래 기록
+    return this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { balance: { decrement: finalAmount } },
+      });
+
+      for (const subOrder of order.items) {
+        await tx.subOrder.update({
+          where: { id: subOrder.id },
+          data: { status: OrderStatus.PAID },
+        });
+      }
+
+      await tx.walletTransaction.create({
+        data: {
+          userId,
+          type: 'USE',
+          amount: finalAmount,
+          balanceAfter: updatedUser.balance,
+          orderId,
+        },
+      });
+
+      return tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: {
+            include: {
+              items: true,
+            },
+          },
+        },
+      });
+    });
+  }
 }

@@ -59,6 +59,17 @@ export class OrderController {
     return this.orderService.cancel(id, userId);
   }
 
+  // POST /orders/:id/pay
+  // 주문 결제 (BUYER)
+  @Post(':id/pay')
+  @Roles(Role.BUYER)
+  async pay(
+    @Param('id') id: string,
+    @GetUser('userId') userId: string,
+  ) {
+    return this.orderService.pay(id, userId);
+  }
+
   // GET /orders/seller/sub-orders
   // 판매자용 SubOrder 목록 (SELLER)
   @Get('seller/sub-orders')
