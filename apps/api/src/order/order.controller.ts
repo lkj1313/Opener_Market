@@ -89,4 +89,15 @@ export class OrderController {
   ) {
     return this.orderService.updateSubOrderStatus(id, dto, userId);
   }
+
+  // POST /orders/sub-orders/:id/confirm
+  // 구매 확정 (BUYER)
+  @Post('sub-orders/:id/confirm')
+  @Roles(Role.BUYER)
+  async confirm(
+    @Param('id') id: string,
+    @GetUser('userId') userId: string,
+  ) {
+    return this.orderService.confirm(id, userId);
+  }
 }

@@ -42,4 +42,14 @@ export const ORDER_ERROR_CODES: Record<string, ErrorCode> = {
     code: 'ORDER-008',
     message: '잔액이 부족합니다.',
   },
+  ALREADY_CONFIRMED: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'ORDER-009',
+    message: '이미 확정된 주문입니다.',
+  },
+  NOT_DELIVERED: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'ORDER-010',
+    message: '배송완료 상태가 아닙니다.',
+  },
 };

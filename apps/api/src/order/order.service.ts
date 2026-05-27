@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseException } from '../common/exceptions/base.exception';
 import { ORDER_ERROR_CODES } from './error-codes/order.error-code';
@@ -106,8 +107,32 @@ export class OrderService {
         where: { id: order.id },
         include: {
           items: {
-            include: {
-              items: true,
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              shippingFee: true,
+              trackingNumber: true,
+              shippingCompany: true,
+              shippedAt: true,
+              deliveredAt: true,
+              confirmedAt: true,
+              isSettled: true,
+              isAutoConfirmed: true,
+              createdAt: true,
+              seller: {
+                select: {
+                  shopName: true,
+                },
+              },
+              items: {
+                select: {
+                  id: true,
+                  productName: true,
+                  price: true,
+                  quantity: true,
+                },
+              },
             },
           },
         },
@@ -122,7 +147,24 @@ export class OrderService {
       orderBy: { createdAt: 'desc' },
       include: {
         items: {
-          include: {
+          select: {
+            id: true,
+            status: true,
+            totalAmount: true,
+            shippingFee: true,
+            trackingNumber: true,
+            shippingCompany: true,
+            shippedAt: true,
+            deliveredAt: true,
+            confirmedAt: true,
+            isSettled: true,
+            isAutoConfirmed: true,
+            createdAt: true,
+            seller: {
+              select: {
+                shopName: true,
+              },
+            },
             items: {
               select: {
                 id: true,
@@ -143,8 +185,32 @@ export class OrderService {
       where: { id: orderId },
       include: {
         items: {
-          include: {
-            items: true,
+          select: {
+            id: true,
+            status: true,
+            totalAmount: true,
+            shippingFee: true,
+            trackingNumber: true,
+            shippingCompany: true,
+            shippedAt: true,
+            deliveredAt: true,
+            confirmedAt: true,
+            isSettled: true,
+            isAutoConfirmed: true,
+            createdAt: true,
+            seller: {
+              select: {
+                shopName: true,
+              },
+            },
+            items: {
+              select: {
+                id: true,
+                productName: true,
+                price: true,
+                quantity: true,
+              },
+            },
           },
         },
       },
@@ -212,8 +278,32 @@ export class OrderService {
         where: { id: orderId },
         include: {
           items: {
-            include: {
-              items: true,
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              shippingFee: true,
+              trackingNumber: true,
+              shippingCompany: true,
+              shippedAt: true,
+              deliveredAt: true,
+              confirmedAt: true,
+              isSettled: true,
+              isAutoConfirmed: true,
+              createdAt: true,
+              seller: {
+                select: {
+                  shopName: true,
+                },
+              },
+              items: {
+                select: {
+                  id: true,
+                  productName: true,
+                  price: true,
+                  quantity: true,
+                },
+              },
             },
           },
         },
@@ -378,12 +468,138 @@ export class OrderService {
         where: { id: orderId },
         include: {
           items: {
-            include: {
-              items: true,
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              shippingFee: true,
+              trackingNumber: true,
+              shippingCompany: true,
+              shippedAt: true,
+              deliveredAt: true,
+              confirmedAt: true,
+              isSettled: true,
+              isAutoConfirmed: true,
+              createdAt: true,
+              seller: {
+                select: {
+                  shopName: true,
+                },
+              },
+              items: {
+                select: {
+                  id: true,
+                  productName: true,
+                  price: true,
+                  quantity: true,
+                },
+              },
             },
           },
         },
       });
+    });
+  }
+
+  // 8. 구매자용: 구매 확정 (수동)
+  async confirm(subOrderId: string, userId: string) {
+    const subOrder = await this.prisma.subOrder.findUnique({
+      where: { id: subOrderId },
+      include: {
+        order: { select: { userId: true } },
+      },
+    });
+
+    if (!subOrder) {
+      throw new BaseException(ORDER_ERROR_CODES.SUB_ORDER_NOT_FOUND);
+    }
+
+    if (subOrder.order.userId !== userId) {
+      throw new BaseException(ORDER_ERROR_CODES.ORDER_FORBIDDEN);
+    }
+
+    if (subOrder.status !== OrderStatus.DELIVERED) {
+      throw new BaseException(ORDER_ERROR_CODES.NOT_DELIVERED);
+    }
+
+    if (subOrder.isSettled || subOrder.confirmedAt) {
+      throw new BaseException(ORDER_ERROR_CODES.ALREADY_CONFIRMED);
+    }
+
+    return this.processConfirmation(subOrder, false);
+  }
+
+  // 9. 자동 구매 확정 (매일 새벽 04:00)
+  @Cron('0 4 * * *')
+  async handleAutoConfirm() {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const subOrders = await this.prisma.subOrder.findMany({
+      where: {
+        status: OrderStatus.DELIVERED,
+        isSettled: false,
+        deliveredAt: { lte: sevenDaysAgo },
+      },
+      include: {
+        order: { select: { userId: true } },
+      },
+    });
+
+    for (const subOrder of subOrders) {
+      try {
+        await this.processConfirmation(subOrder, true);
+      } catch (error) {
+        console.error(`Auto confirm failed for SubOrder ${subOrder.id}:`, error);
+      }
+    }
+  }
+
+  // 공통 확정 처리 로직
+  private async processConfirmation(
+    subOrder: any,
+    isAuto: boolean,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. SubOrder 확정 처리
+      const updatedSubOrder = await tx.subOrder.update({
+        where: { id: subOrder.id },
+        data: {
+          confirmedAt: new Date(),
+          isSettled: true,
+          isAutoConfirmed: isAuto,
+        },
+      });
+
+      // 2. 판매자 정산 (95%)
+      const settlementAmount = Math.floor(subOrder.totalAmount * 0.95);
+      await tx.seller.update({
+        where: { id: subOrder.sellerId },
+        data: { balance: { increment: settlementAmount } },
+      });
+
+      // 3. 구매자 포인트 적립 (2.5%)
+      const pointAmount = Math.floor(subOrder.totalAmount * 0.025);
+      const updatedUser = await tx.user.update({
+        where: { id: subOrder.order.userId },
+        data: { point: { increment: pointAmount } },
+      });
+
+      // 4. 포인트 거래 내역 기록
+      await tx.pointTransaction.create({
+        data: {
+          userId: subOrder.order.userId,
+          type: 'EARN',
+          amount: pointAmount,
+          pointAfter: updatedUser.point,
+          description: isAuto
+            ? '자동 구매 확정 포인트 적립'
+            : '구매 확정 포인트 적립',
+          orderId: subOrder.orderId,
+        },
+      });
+
+      return updatedSubOrder;
     });
   }
 }
