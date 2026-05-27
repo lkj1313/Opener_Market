@@ -79,6 +79,7 @@ describe('ProductService', () => {
       expect(prisma.product.create).toHaveBeenCalledWith({
         data: {
           sellerId: 'seller-1',
+          categoryId: null,
           name: dto.name,
           description: dto.description,
           price: dto.price,
