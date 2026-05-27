@@ -269,7 +269,10 @@ export class OrderService {
         for (const item of subOrder.items) {
           await tx.product.update({
             where: { id: item.productId },
-            data: { stock: { increment: item.quantity } },
+            data: {
+              stock: { increment: item.quantity },
+              salesCount: { decrement: item.quantity },
+            },
           });
         }
       }
@@ -402,7 +405,11 @@ export class OrderService {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: {
-        items: true,
+        items: {
+          include: {
+            items: true,
+          },
+        },
       },
     });
 
@@ -452,6 +459,13 @@ export class OrderService {
           where: { id: subOrder.id },
           data: { status: OrderStatus.PAID },
         });
+
+        for (const item of subOrder.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { salesCount: { increment: item.quantity } },
+          });
+        }
       }
 
       await tx.walletTransaction.create({

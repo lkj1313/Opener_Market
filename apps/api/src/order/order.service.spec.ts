@@ -309,7 +309,10 @@ describe('OrderService', () => {
       });
       expect(prisma.product.update).toHaveBeenCalledWith({
         where: { id: 'prod-1' },
-        data: { stock: { increment: 2 } },
+        data: {
+          stock: { increment: 2 },
+          salesCount: { decrement: 2 },
+        },
       });
     });
   });

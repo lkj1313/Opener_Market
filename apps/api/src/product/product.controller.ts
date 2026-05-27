@@ -36,14 +36,20 @@ export class ProductController {
   }
 
   // GET /products
-  // 전체 상품 목록 (공개)
+  // 상품 검색 및 목록 (공개)
   @Get()
   @Public()
   async findAll(
+    @Query('keyword') keyword?: string,
+    @Query('sort') sort?: string,
+    @Query('categoryId') categoryId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     return this.productService.findAll({
+      keyword,
+      sort,
+      categoryId,
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
     });
