@@ -59,6 +59,17 @@ export class OrderController {
     return this.orderService.cancel(id, userId);
   }
 
+  // POST /orders/:id/pay
+  // 주문 결제 (BUYER)
+  @Post(':id/pay')
+  @Roles(Role.BUYER)
+  async pay(
+    @Param('id') id: string,
+    @GetUser('userId') userId: string,
+  ) {
+    return this.orderService.pay(id, userId);
+  }
+
   // GET /orders/seller/sub-orders
   // 판매자용 SubOrder 목록 (SELLER)
   @Get('seller/sub-orders')
@@ -77,5 +88,16 @@ export class OrderController {
     @GetUser('userId') userId: string,
   ) {
     return this.orderService.updateSubOrderStatus(id, dto, userId);
+  }
+
+  // POST /orders/sub-orders/:id/confirm
+  // 구매 확정 (BUYER)
+  @Post('sub-orders/:id/confirm')
+  @Roles(Role.BUYER)
+  async confirm(
+    @Param('id') id: string,
+    @GetUser('userId') userId: string,
+  ) {
+    return this.orderService.confirm(id, userId);
   }
 }

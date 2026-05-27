@@ -54,6 +54,8 @@ model User {
   role          Role       @default(BUYER)
   status        UserStatus @default(ACTIVE)
   isSuperAdmin  Boolean    @default(false)
+  balance       Int        @default(0)
+  point         Int        @default(0)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
@@ -61,6 +63,8 @@ model User {
   sellerApplication   SellerApplication?
   cart                Cart?
   orders              Order[]
+  walletTransactions  WalletTransaction[]
+  pointTransactions   PointTransaction[]
 }
 
 model SellerApplication {
@@ -84,12 +88,14 @@ model Seller {
   shopName        String
   businessAddress String
   returnAddress   String?
+  balance         Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   products      Product[]
   shopDiscounts ShopDiscount[]
+  subOrders     SubOrder[]
 }
 
 model Category {
@@ -195,11 +201,15 @@ model SubOrder {
   shippingCompany String?
   shippedAt       DateTime?
   deliveredAt     DateTime?
+  confirmedAt     DateTime?
+  isSettled       Boolean     @default(false)
+  isAutoConfirmed Boolean     @default(false)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  order Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  items OrderItem[]
+  order  Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller Seller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  items  OrderItem[]
 }
 
 model OrderItem {
@@ -212,4 +222,29 @@ model OrderItem {
 
   subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id])
+}
+
+model WalletTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // CHARGE, USE, REFUND
+  amount       Int
+  balanceAfter Int
+  orderId      String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PointTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // EARN, USE, REFUND
+  amount      Int
+  pointAfter  Int
+  description String?
+  orderId     String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
