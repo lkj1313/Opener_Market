@@ -5,6 +5,7 @@ import {
   normalizePagination,
 } from '@opener/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { BaseException } from '../common/exceptions/base.exception';
 import { PRODUCT_ERROR_CODES } from './error-codes/product.error-code';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -14,7 +15,24 @@ import { ProductStatus } from '../generated/prisma/enums';
 
 @Injectable()
 export class ProductService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+  ) {}
+
+  private getSearchCacheKey(query: {
+    keyword?: string;
+    sort?: string;
+    categoryId?: string;
+    page?: number;
+    limit?: number;
+  }): string {
+    return `products:search:${query.keyword || ''}:${query.sort || 'NEWEST'}:${query.page || 1}:${query.limit || 20}:${query.categoryId || ''}`;
+  }
+
+  private async invalidateSearchCache(): Promise<void> {
+    await this.redis.delByPattern('products:search:*');
+  }
 
   // 1. 상품 등록 (SELLER)
   async create(dto: CreateProductDto, userId: string) {
@@ -26,7 +44,7 @@ export class ProductService {
       throw new BaseException(PRODUCT_ERROR_CODES.PRODUCT_FORBIDDEN);
     }
 
-    return this.prisma.product.create({
+    const product = await this.prisma.product.create({
       data: {
         sellerId: seller.id,
         categoryId: dto.categoryId ?? null,
@@ -37,20 +55,71 @@ export class ProductService {
         status: dto.status ?? ProductStatus.ACTIVE,
       },
     });
+
+    await this.invalidateSearchCache();
+
+    return product;
   }
 
-  // 2. 전체 상품 목록 (BUYER용, ACTIVE만)
-  async findAll(query: { page?: number; limit?: number; categoryId?: string }) {
+  // 2. 전체 상품 목록 및 검색 (BUYER용, ACTIVE만)
+  async findAll(query: {
+    page?: number;
+    limit?: number;
+    categoryId?: string;
+    keyword?: string;
+    sort?: string;
+  }) {
     const { page, limit } = normalizePagination(query.page, query.limit);
     const skip = calculateSkip(page, limit);
 
+    if (query.keyword && query.keyword.length < 2) {
+      throw new BaseException(PRODUCT_ERROR_CODES.INVALID_KEYWORD);
+    }
+
+    // 캐시 키 생성 및 조회
+    const cacheKey = this.getSearchCacheKey({
+      keyword: query.keyword,
+      sort: query.sort,
+      categoryId: query.categoryId,
+      page,
+      limit,
+    });
+
+    const cached = await this.redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+
     const where: any = { status: ProductStatus.ACTIVE };
     if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.keyword) {
+      where.name = { contains: query.keyword, mode: 'insensitive' };
+    }
+
+    let orderBy: any = { createdAt: 'desc' };
+    switch (query.sort) {
+      case 'BEST':
+        orderBy = { salesCount: 'desc' };
+        break;
+      case 'RATING':
+        orderBy = { rating: { sort: 'desc', nulls: 'last' } };
+        break;
+      case 'PRICE_ASC':
+        orderBy = { price: 'asc' };
+        break;
+      case 'PRICE_DESC':
+        orderBy = { price: 'desc' };
+        break;
+      case 'NEWEST':
+      default:
+        orderBy = { createdAt: 'desc' };
+        break;
+    }
 
     const [products, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         skip,
         take: limit,
         include: {
@@ -86,7 +155,12 @@ export class ProductService {
       ),
     }));
 
-    return createPaginatedResult(data, total, page, limit);
+    const result = createPaginatedResult(data, total, page, limit);
+
+    // 캐시 저장 (TTL 300초 = 5분)
+    await this.redis.setex(cacheKey, 300, JSON.stringify(result));
+
+    return result;
   }
 
   // 3. 내 상품 목록 (SELLER용)
@@ -168,10 +242,14 @@ export class ProductService {
       throw new BaseException(PRODUCT_ERROR_CODES.PRODUCT_FORBIDDEN);
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: dto,
     });
+
+    await this.invalidateSearchCache();
+
+    return updated;
   }
 
   // 6. 상품 삭제 (소프트 딜리트 → HIDDEN, SELLER)
@@ -189,10 +267,14 @@ export class ProductService {
       throw new BaseException(PRODUCT_ERROR_CODES.PRODUCT_FORBIDDEN);
     }
 
-    return this.prisma.product.update({
+    const removed = await this.prisma.product.update({
       where: { id },
       data: { status: ProductStatus.HIDDEN },
     });
+
+    await this.invalidateSearchCache();
+
+    return removed;
   }
 
   // 7. 상품 상태 변경 (ADMIN용)
@@ -205,10 +287,14 @@ export class ProductService {
       throw new BaseException(PRODUCT_ERROR_CODES.PRODUCT_NOT_FOUND);
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { status: dto.status },
     });
+
+    await this.invalidateSearchCache();
+
+    return updated;
   }
 
   // 할인 적용 가격 계산

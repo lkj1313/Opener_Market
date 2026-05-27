@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductService } from './product.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { BaseException } from '../common/exceptions/base.exception';
 import { PRODUCT_ERROR_CODES } from './error-codes/product.error-code';
 import { ProductStatus, Role, DiscountType } from '../generated/prisma/enums';
@@ -8,6 +9,7 @@ import { ProductStatus, Role, DiscountType } from '../generated/prisma/enums';
 describe('ProductService', () => {
   let service: ProductService;
   let prisma: typeof mockPrismaService;
+  let redis: typeof mockRedisService;
 
   const mockPrismaService = {
     seller: {
@@ -25,18 +27,27 @@ describe('ProductService', () => {
     },
   };
 
+  const mockRedisService = {
+    get: jest.fn(),
+    setex: jest.fn(),
+    delByPattern: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: RedisService, useValue: mockRedisService },
       ],
     }).compile();
 
     service = module.get<ProductService>(ProductService);
     prisma = module.get<typeof mockPrismaService>(PrismaService);
+    redis = module.get<typeof mockRedisService>(RedisService);
 
     jest.clearAllMocks();
+    redis.get.mockResolvedValue(null);
   });
 
   describe('create', () => {

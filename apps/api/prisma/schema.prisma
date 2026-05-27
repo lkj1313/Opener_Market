@@ -65,6 +65,7 @@ model User {
   orders              Order[]
   walletTransactions  WalletTransaction[]
   pointTransactions   PointTransaction[]
+  reviews             Review[]
 }
 
 model SellerApplication {
@@ -122,11 +123,16 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  reviewCount Int       @default(0)
+  rating      Float?
+  salesCount  Int       @default(0)
+
   seller     Seller     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   category   Category?  @relation(fields: [categoryId], references: [id])
   discounts  Discount[]
   cartItems  CartItem[]
   orderItems OrderItem[]
+  reviews    Review[]
 }
 
 model Discount {
@@ -222,6 +228,7 @@ model OrderItem {
 
   subOrder SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id])
+  review   Review?
 }
 
 model WalletTransaction {
@@ -247,4 +254,19 @@ model PointTransaction {
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  productId   String
+  userId      String
+  orderItemId String   @unique
+  rating      Int
+  content     String
+  isHidden    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 }

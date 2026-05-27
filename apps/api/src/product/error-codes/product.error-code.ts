@@ -17,4 +17,9 @@ export const PRODUCT_ERROR_CODES: Record<string, ErrorCode> = {
     code: 'PRODUCT-003',
     message: '유효하지 않은 상품 상태입니다.',
   },
+  INVALID_KEYWORD: {
+    status: HttpStatus.BAD_REQUEST,
+    code: 'PRODUCT-004',
+    message: '검색어는 2글자 이상 입력해야 합니다.',
+  },
 };
