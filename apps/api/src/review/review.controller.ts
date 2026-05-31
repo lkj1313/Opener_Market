@@ -9,6 +9,15 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -16,15 +25,19 @@ import { Role } from '../generated/prisma/enums';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 
+@ApiTags('Review')
 @Controller()
 export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
-  // POST /products/:id/reviews
-  // 리뷰 작성 (BUYER)
   @Post('products/:id/reviews')
   @Roles(Role.BUYER)
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '리뷰 작성 (BUYER)' })
+  @ApiParam({ name: 'id', description: '상품 ID' })
+  @ApiBody({ type: CreateReviewDto })
+  @ApiResponse({ status: 201, description: '리뷰 작성 성공' })
   async create(
     @Param('id') productId: string,
     @Body() dto: CreateReviewDto,
@@ -33,10 +46,12 @@ export class ReviewController {
     return this.reviewService.create(dto, userId, productId);
   }
 
-  // GET /products/:id/reviews
-  // 상품별 리뷰 목록 (공개)
   @Get('products/:id/reviews')
   @Public()
+  @ApiOperation({ summary: '상품별 리뷰 목록 (공개)' })
+  @ApiParam({ name: 'id', description: '상품 ID' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   async findByProduct(
     @Param('id') productId: string,
     @Query('page') page?: string,
@@ -49,10 +64,12 @@ export class ReviewController {
     );
   }
 
-  // GET /admin/reviews
-  // 어드민: 전체 리뷰 목록
   @Get('admin/reviews')
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '전체 리뷰 목록 (ADMIN)' })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   async findAllForAdmin(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -63,10 +80,11 @@ export class ReviewController {
     );
   }
 
-  // PATCH /admin/reviews/:id/hide
-  // 어드민: 리뷰 숨김 처리
   @Patch('admin/reviews/:id/hide')
   @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '리뷰 숨김 처리 (ADMIN)' })
+  @ApiParam({ name: 'id', description: '리뷰 ID' })
   async hideByAdmin(@Param('id') reviewId: string) {
     return this.reviewService.hideByAdmin(reviewId);
   }

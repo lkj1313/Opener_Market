@@ -8,21 +8,32 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { ShopDiscountService } from './shop-discount.service';
 import { CreateShopDiscountDto } from './dto/create-shop-discount.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../generated/prisma/enums';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
+@ApiTags('Shop Discount')
 @Controller('shop-discounts')
 export class ShopDiscountController {
   constructor(private readonly shopDiscountService: ShopDiscountService) {}
 
-  // POST /shop-discounts
-  // 상점 할인 등록 (SELLER)
   @Post()
   @Roles(Role.SELLER)
   @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '상점 할인 등록 (SELLER)' })
+  @ApiBody({ type: CreateShopDiscountDto })
+  @ApiResponse({ status: 201, description: '등록 성공' })
   async create(
     @Body() dto: CreateShopDiscountDto,
     @GetUser('userId') userId: string,
@@ -30,18 +41,19 @@ export class ShopDiscountController {
     return this.shopDiscountService.create(dto, userId);
   }
 
-  // GET /shop-discounts/my
-  // 내 상점 할인 목록 (SELLER)
   @Get('my')
   @Roles(Role.SELLER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '내 상점 할인 목록 (SELLER)' })
   async findMyShopDiscounts(@GetUser('userId') userId: string) {
     return this.shopDiscountService.findMyShopDiscounts(userId);
   }
 
-  // DELETE /shop-discounts/:id
-  // 상점 할인 삭제 (SELLER)
   @Delete(':id')
   @Roles(Role.SELLER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '상점 할인 삭제 (SELLER)' })
+  @ApiParam({ name: 'id', description: '할인 ID' })
   async remove(@Param('id') id: string, @GetUser('userId') userId: string) {
     return this.shopDiscountService.remove(id, userId);
   }
