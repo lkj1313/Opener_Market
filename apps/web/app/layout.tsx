@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { QueryProvider } from "./providers/query-provider";
+import { ThemeProvider } from "./providers/theme-provider";
 import { Toaster } from "sonner";
 import { Geist } from "next/font/google";
 import { cn } from "@/shared/lib/utils";
@@ -29,9 +30,12 @@ export default function RootLayout({
     <html
       lang="ko"
       className={cn("h-full antialiased", "font-sans", geist.variable)}
+      suppressHydrationWarning
     >
       <body className={`${pretendard.className} min-h-full flex flex-col`}>
-        <QueryProvider>{children}</QueryProvider>
+        <ThemeProvider>
+          <QueryProvider>{children}</QueryProvider>
+        </ThemeProvider>
         <Toaster position="bottom-right" richColors />
       </body>
     </html>

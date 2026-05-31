@@ -17,6 +17,8 @@ import {
 } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserListResponseDto } from './dto/user-list-response.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role, UserStatus } from '../generated/prisma/enums';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -29,7 +31,7 @@ export class UserController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: '내 정보 조회' })
-  @ApiResponse({ status: 200, description: '내 정보 반환' })
+  @ApiResponse({ status: 200, description: '내 정보 반환', type: UserResponseDto })
   async findMe(@GetUser('userId') userId: string) {
     return this.userService.findMe(userId);
   }
@@ -38,6 +40,7 @@ export class UserController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '내 정보 수정' })
   @ApiBody({ type: UpdateProfileDto })
+  @ApiResponse({ status: 200, description: '수정된 내 정보', type: UserResponseDto })
   async updateProfile(
     @GetUser('userId') userId: string,
     @Body() dto: UpdateProfileDto,
@@ -49,6 +52,7 @@ export class UserController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: '전체 사용자 목록 (ADMIN)' })
+  @ApiResponse({ status: 200, description: '사용자 목록', type: UserListResponseDto })
   @ApiQuery({ name: 'role', required: false, enum: Role })
   @ApiQuery({ name: 'status', required: false, enum: UserStatus })
   @ApiQuery({ name: 'page', required: false })
@@ -71,6 +75,7 @@ export class UserController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: '계정 상태 변경 (ADMIN)' })
+  @ApiResponse({ status: 200, description: '변경된 사용자 정보', type: UserResponseDto })
   @ApiParam({ name: 'id', description: '사용자 ID' })
   async updateStatus(
     @Param('id') id: string,
@@ -83,6 +88,7 @@ export class UserController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: '역할 변경 (ADMIN)' })
+  @ApiResponse({ status: 200, description: '변경된 사용자 정보', type: UserResponseDto })
   @ApiParam({ name: 'id', description: '사용자 ID' })
   async updateRole(
     @Param('id') id: string,

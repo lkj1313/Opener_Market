@@ -45,7 +45,7 @@ export function LoginForm() {
           {...register("email")}
         />
         {errors.email && (
-          <p className="text-sm text-red-600">{errors.email.message}</p>
+          <p className="text-caption text-error">{errors.email.message}</p>
         )}
       </div>
 
@@ -58,11 +58,11 @@ export function LoginForm() {
           {...register("password")}
         />
         {errors.password && (
-          <p className="text-sm text-red-600">{errors.password.message}</p>
+          <p className="text-caption text-error">{errors.password.message}</p>
         )}
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && <p className="text-caption text-error">{serverError}</p>}
 
       <Button type="submit" disabled={isPending} className="mt-2">
         {isPending ? "로그인 중..." : "로그인"}

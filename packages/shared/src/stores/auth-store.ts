@@ -9,25 +9,10 @@ interface AuthState {
   logout: () => void;
 }
 
-function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('accessToken');
-}
-
-function getStoredUser(): User | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem('user');
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: getStoredToken(),
-  user: getStoredUser(),
-  isLoggedIn: !!getStoredToken(),
+  accessToken: null,
+  user: null,
+  isLoggedIn: false,
   login: (token, user) => {
     localStorage.setItem('accessToken', token);
     localStorage.setItem('user', JSON.stringify(user));
