@@ -8,3 +8,6 @@ export * from './types/product/product-request.type.js';
 export * from './types/seller-application/seller-application-request.type.js';
 export * from './types/shop-discount/shop-discount-request.type.js';
 export * from './types/user/user-request.type.js';
+export * from './api/http-client.js';
+export * from './types/auth/user.type.js';
+export * from './stores/auth-store.js';
