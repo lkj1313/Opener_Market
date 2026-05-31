@@ -23,6 +23,8 @@ import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
+import { ProductListResponseDto } from './dto/product-list-response.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '../generated/prisma/enums';
 import { GetUser } from '../auth/decorators/get-user.decorator';
@@ -39,7 +41,7 @@ export class ProductController {
   @ApiBearerAuth()
   @ApiOperation({ summary: '상품 등록 (SELLER)' })
   @ApiBody({ type: CreateProductDto })
-  @ApiResponse({ status: 201, description: '상품 등록 성공' })
+  @ApiResponse({ status: 201, description: '상품 등록 성공', type: ProductResponseDto })
   @ApiResponse({ status: 403, description: '권한 없음' })
   async create(
     @Body() dto: CreateProductDto,
@@ -56,7 +58,7 @@ export class ProductController {
   @ApiQuery({ name: 'categoryId', required: false, description: '카테고리 ID' })
   @ApiQuery({ name: 'page', required: false, description: '페이지' })
   @ApiQuery({ name: 'limit', required: false, description: '페이지당 개수' })
-  @ApiResponse({ status: 200, description: '상품 목록 반환' })
+  @ApiResponse({ status: 200, description: '상품 목록 반환', type: ProductListResponseDto })
   async findAll(
     @Query('keyword') keyword?: string,
     @Query('sort') sort?: string,
@@ -77,6 +79,7 @@ export class ProductController {
   @Roles(Role.SELLER)
   @ApiBearerAuth()
   @ApiOperation({ summary: '내 상품 목록 (SELLER)' })
+  @ApiResponse({ status: 200, description: '내 상품 목록', type: ProductListResponseDto })
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'limit', required: false })
   async findMyProducts(
@@ -94,7 +97,7 @@ export class ProductController {
   @Public()
   @ApiOperation({ summary: '상품 상세 (공개)' })
   @ApiParam({ name: 'id', description: '상품 ID' })
-  @ApiResponse({ status: 200, description: '상품 상세 반환' })
+  @ApiResponse({ status: 200, description: '상품 상세 반환', type: ProductResponseDto })
   @ApiResponse({ status: 404, description: '상품 없음' })
   async findOne(@Param('id') id: string) {
     return this.productService.findOne(id);
@@ -104,6 +107,7 @@ export class ProductController {
   @Roles(Role.SELLER)
   @ApiBearerAuth()
   @ApiOperation({ summary: '상품 수정 (SELLER)' })
+  @ApiResponse({ status: 200, description: '수정된 상품', type: ProductResponseDto })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiBody({ type: UpdateProductDto })
   async update(
@@ -118,6 +122,7 @@ export class ProductController {
   @Roles(Role.SELLER)
   @ApiBearerAuth()
   @ApiOperation({ summary: '상품 삭제 (SELLER)' })
+  @ApiResponse({ status: 200, description: '삭제된 상품', type: ProductResponseDto })
   @ApiParam({ name: 'id', description: '상품 ID' })
   async remove(
     @Param('id') id: string,
@@ -130,6 +135,7 @@ export class ProductController {
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: '상품 상태 변경 (ADMIN)' })
+  @ApiResponse({ status: 200, description: '변경된 상품', type: ProductResponseDto })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiBody({ type: UpdateProductStatusDto })
   async updateStatus(

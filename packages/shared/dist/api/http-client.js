@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ApiError = void 0;
 exports.createHttpClient = createHttpClient;
 class ApiError extends Error {
     status;
@@ -8,6 +9,7 @@ class ApiError extends Error {
         this.status = status;
     }
 }
+exports.ApiError = ApiError;
 function normalizeHeaders(headers) {
     if (!headers)
         return {};
@@ -48,7 +50,8 @@ function createHttpClient(config) {
             const errorBody = await res.json().catch(() => ({ message: 'Unknown error' }));
             throw new ApiError(res.status, errorBody.message || `HTTP ${res.status}`);
         }
-        return res.json();
+        const responseBody = await res.json();
+        return responseBody?.data ?? responseBody;
     }
     return {
         get: (endpoint, params) => request(endpoint, { method: 'GET', params }),

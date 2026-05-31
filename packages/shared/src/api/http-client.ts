@@ -3,7 +3,7 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
 }
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) {
     super(message);
   }
@@ -65,7 +65,8 @@ export function createHttpClient(config: HttpClientConfig) {
       throw new ApiError(res.status, errorBody.message || `HTTP ${res.status}`);
     }
 
-    return res.json();
+    const responseBody = await res.json();
+    return responseBody?.data ?? responseBody;
   }
 
   return {
